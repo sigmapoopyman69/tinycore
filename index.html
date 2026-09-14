@@ -2,39 +2,72 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>In-Tab Minimalist Linux Emulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>In-Tab Fullscreen Linux</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #111; overflow: hidden; font-family: sans-serif; }
-        #emulator-container { display: flex; flex-direction: column; width: 100%; height: 100%; }
-        /* The virtual terminal canvas frame rendering TinyCore graphic space */
-        #screen { width: 1024px; height: 768px; margin: auto; background: #000; border: 2px solid #333; }
+        /* Force the browser canvas window layout to take absolute full-scale boundaries */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050505;
+            overflow: hidden; /* Prevent native scrollbars from breaking fullscreen layouts */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The container handling the v86 internal canvas and typography wrappers */
+        #screen_container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+
+        /* Force internal dynamically generated v86 video canvas frames to stretch cleanly */
+        #screen_container canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain; /* Keeps aspect ratios correct without stretching fonts */
+        }
+
+        /* Force internal text terminal fallbacks to look clean and legible if graphics aren't loaded */
+        #screen_container white-space {
+            font-family: monospace;
+            font-size: 14px;
+            color: #00ff00;
+            line-height: 1.2;
+        }
     </style>
-    <!-- Load the main WebAssembly-x86 bridge runtime engine -->
-    <script src="lib/v86.js"></script>
+    <!-- Load libv86 framework locally from your repository path -->
+    <script src="lib/libv86.js"></script>
 </head>
 <body>
 
-    <div id="emulator-container">
-        <!-- Canvas target where the x86 Linux GUI will draw frames -->
-        <canvas id="screen"></canvas>
-    </div>
+    <!-- Target div element hook where libv86 renders hardware frames -->
+    <div id="screen_container"></div>
 
     <script>
         window.onload = function() {
             var emulator = new V86({
-                canvas: document.getElementById("screen"),
-                memory_size: 256 * 1024 * 1024, // Allocate a lightweight 256MB of guest RAM
-                vga_memory_size: 8 * 1024 * 1024,
-                boot_order: 0x213, // Force priority boot order sequence to pull from CD-ROM
+                wasm_path: "lib/v86.wasm", 
+                screen_container: document.getElementById("screen_container"),
+                
+                // Maximize allocation boundaries since Core Linux compiles strictly in RAM memory
+                memory_size: 512 * 1024 * 1024, 
+                vga_memory_size: 16 * 1024 * 1024,
+                boot_order: 0x213,
 
-                // Load required open architecture hardware parameters
+                // Pointing directly to the BIOS binaries inside your own repository folders
                 bios: { url: "images/bios.bin" },
                 vga_bios: { url: "images/vgabios.bin" },
+                
+                // Pointing to your lightweight 19MB Core Linux disk image
                 cdrom: { url: "images/Core-current.iso" },
 
-                // Configure the in-browser TCP WebSocket pipeline bridge
-                network_relay_url: "wss://wisp.mercurywork.shop/", // A free public Wisp proxy routing hub
+                // Active modern Wisp protocol proxy hub endpoint relay routing
+                network_relay_url: "wss://wisp.mercurywork.shop/", 
                 autostart: true
             });
         };
